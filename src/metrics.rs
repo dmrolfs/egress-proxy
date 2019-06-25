@@ -41,12 +41,12 @@ lazy_static! {
     .unwrap();
 }
 
-pub struct ProxyCollection( Rc<Family> );
+pub struct ProxyCollection( pub Rc<Family> );
 
 pub struct Family {
-    allowed: &'static IntCounterVec,
-    blocked: &'static IntCounterVec,
-    body_size: &'static IntGauge,
+    pub allowed: &'static IntCounterVec,
+    pub blocked: &'static IntCounterVec,
+    pub body_size: &'static IntGauge,
 }
 
 impl ProxyCollection {

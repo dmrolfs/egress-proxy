@@ -12,11 +12,6 @@ use header::HeaderValue;
 use prometheus::{IntCounterVec, IntGauge, Histogram, HistogramVec};
 use prometheus::IntGaugeVec;
 use stopwatch::Stopwatch;
-use crate::metrics::{
-    HTTP_PROXY_TOTAL_LATENCY_HISTOGRAM,
-    HTTP_EGRESS_REQ_LATENCY_HISTOGRAM,
-    HTTP_PROXY_OVERHEAD_HISTOGRAM
-};
 
 lazy_static! {
     static ref HTTP_PROXY_TOTAL_LATENCY_HISTOGRAM: HistogramVec = register_histogram_vec!(

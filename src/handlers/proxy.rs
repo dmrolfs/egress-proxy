@@ -3,8 +3,8 @@ use actix_web::web::{Data, Payload};
 use url::Url;
 use futures::Future;
 use prometheus::HistogramVec;
-use log::info;
-use actix_http::http::{HeaderName, header};
+use log::{debug, info};
+use actix_http::http::{HeaderName, header, HeaderValue};
 use stopwatch::Stopwatch;
 use core::borrow::{BorrowMut, Borrow};
 use std::time::Duration;
@@ -48,15 +48,17 @@ pub fn forward(
     };
 
     let method_sel = labels!{ "method" => req.method().as_str(), };
-    let family = proxy_collection.get_ref();
+    let family = proxy_collection.get_ref().0.clone();
 
-    let allowed = family.allowed.with( method_sel );
+    let allowed = family.allowed.with( &method_sel );
     allowed.inc();
 
-    if Some(size_value) = req.headers().get( header::CONTENT_LENGTH ) {
-        let size = size_value.parse::<i64>().unwrap();
+    if let Some(size_value) = req.headers().get( header::CONTENT_LENGTH ) {
+        let size = size_value.to_str().unwrap().parse::<i64>().unwrap();
         family.body_size.set( size );
     }
+
+    debug!( "proxying request to {:?}...", new_url.host_str() );
 
     let mut request_timer = Stopwatch::start_new();
 
@@ -65,6 +67,7 @@ pub fn forward(
         .map_err( Error::from )
         .map( move |res| {
             let request_duration = request_timer.elapsed();
+            debug!( "response received from {:?} in {:?}...", new_url.host_str(), request_duration );
 //            request_timer.observe_duration();
 
             let mut client_resp = HttpResponse::build( res.status() );

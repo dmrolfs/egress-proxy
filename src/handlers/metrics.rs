@@ -14,5 +14,5 @@ pub fn gather( _req: HttpRequest ) -> impl IntoFuture<Item = String, Error = Err
         .map( |payload| {
             println!( "{}", payload );
             payload
-        });
+        })
 }
