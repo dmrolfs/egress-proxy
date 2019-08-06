@@ -41,7 +41,7 @@ lazy_static! {
     .unwrap();
 }
 
-pub struct ProxyCollection( pub Rc<Family> );
+pub struct MetricsCollection(pub Rc<Family> );
 
 pub struct Family {
     pub allowed: &'static IntCounterVec,
@@ -49,9 +49,9 @@ pub struct Family {
     pub body_size: &'static IntGauge,
 }
 
-impl ProxyCollection {
+impl MetricsCollection {
     pub fn new() -> Self {
-        ProxyCollection(
+        MetricsCollection(
             Rc::new(
                 Family {
                     allowed: &ALLOWED_TOTAL,

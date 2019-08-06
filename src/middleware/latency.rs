@@ -123,20 +123,6 @@ where
 
         let sel = labels!{ "method" => svc_req.method().as_str(), };
 
-//        ALLOWED_TOTAL.with( &labels!{"method" => "GET",} ).inc();
-//        self.family.passed.with( &sel ).inc();
-//        self.family.requests.inc();
-
-//        let size: i64 = svc_req.headers()
-//            .get( header::CONTENT_LENGTH )
-//            .unwrap_or( &HeaderValue::from_static( "0" ) )
-//            .to_str()
-//            .unwrap()
-//            .parse::<i64>()
-//            .unwrap();
-//
-//        self.family.request_size.set( size );
-
         let total_histogram = self.family.total.with( &sel );
         let egress_histogram = self.family.egress.with( &sel );
         let overhead_histogram = self.family.overhead.with( &sel );
@@ -156,7 +142,7 @@ where
                 };
 
                 Ok( resp )
-            })
+            } )
         )
     }
 }
