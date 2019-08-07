@@ -34,20 +34,13 @@ fn main() -> std::io::Result<()> {
     setup_logger();
 
     let cfg = Config::from_args();
-    let forward_url = cfg.forward_url.clone();
     info!( "App Config = {:?}", cfg );
-
-//    let border = Arc::new(HostControl::new(  forward_url ) );
-//    let border = Arc::new(
-//        HostControlBuilder::new()
-//            .with_default_destination( forward_url )
-//            .build()
-//    );
+    let forward_url = cfg.forward_url.clone();
 
     HttpServer::new( move || {
         App::new()
             .data( Client::new() )
-//            .data( forward_url.clone() )
+            .data( forward_url.clone() )
             .data( MetricsCollection::new() )
             .wrap( Logger::new( r#"%a "%r" %s %b "%{Referer}i" "%{User-Agent}i" %D"# ) )
             .default_service(

@@ -38,9 +38,15 @@ pub struct HostControlBuilder {
     destinations: DestinationMap,
 }
 
+impl Default for HostControlBuilder {
+    fn default() -> Self {
+        HostControlBuilder { destinations: HashMap::new(), }
+    }
+}
+
 impl HostControlBuilder {
     pub fn new() -> Self {
-        HostControlBuilder { destinations: HashMap::new(), }
+        HostControlBuilder::default()
     }
 
     pub fn with_default_destination<D: Into<Destination>>( mut self, dest: D ) -> Self {
@@ -97,7 +103,7 @@ impl BorderControl for SingleHostBorder {
 }
 
 #[derive(Clone)]
-  struct ManyHostsBorder {
+struct ManyHostsBorder {
     destinations: DestinationMap,
     has_default: bool,
 }
@@ -154,63 +160,3 @@ impl BorderControl for ManyHostsBorder {
         }
     }
 }
-
-
-
-
-
-
-
-//#[derive(Clone)]
-//pub struct HostControl {
-//    destinations: HashMap<String, HostAndPort>,
-//}
-//
-//impl HostControl {
-//    #[allow(clippy::new_ret_no_self)]
-//    pub fn new<C: Into<HostControlConfig>>( config: C ) -> HostControl {
-//        HostControl { destinations: config.into().destinations, }
-//    }
-//}
-//
-//impl Default for HostControl {
-//    fn default() -> Self {
-//
-//    }
-//}
-//
-//impl BorderControl for HostControl {
-//    fn requestVisa( &self, req: &ServiceRequest ) -> Result<HostAndPort, Error> {
-//        let uri = req.uri();
-//        info!( "uri={:?}, uri.host={:?}", uri, uri.host() );
-//        let host = if let Some(h) = uri.host() {
-//            info!( "host={:?}", h );
-//            Host::parse( h )
-//        } else {
-//            Err( ParseError::EmptyHost )
-//        }
-//        .unwrap();
-//
-//        let port = uri.port_u16().unwrap();
-//
-//        info!( "host={:?} port={:?}", host, port );
-//        let candidate = HostAndPort { host: host, port: port, };
-//        info!( "candidate={:?}", candidate );
-//
-//        let result = match &self.whitelist {
-//            None => true,
-//            Some( wl ) => {
-//                let mut contains = false;
-//                for hp in wl.iter() {
-//                    if (hp.host == candidate.host) && (hp.port == candidate.port) {
-//                        contains = true;
-//                        break;
-//                    }
-//                }
-//                contains
-//            },
-//        };
-//
-//        Ok( result )
-//    }
-//}

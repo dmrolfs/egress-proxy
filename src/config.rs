@@ -14,7 +14,7 @@ const FORWARD_HOST: &str = "forward_host";
 const FORWARD_PORT: &str = "forward_port";
 
 
-#[derive(Clone,Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub struct Config {
     pub listen_socket_address: Option<SocketAddr>,
     pub forward_url: Url,
