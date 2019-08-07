@@ -20,8 +20,12 @@ impl Default for ProxyFilterCollection {
 }
 
 impl ProxyFilterCollection {
-    pub fn with_border( mut self, border: dyn BorderControl ) -> Self {
-        Rc::get_mut( &mut self.border ).replace( Box::new(border) );
+    pub fn new() -> Self {
+        ProxyFilterCollection::default()
+    }
+
+    pub fn with_border( mut self, border: Box<dyn BorderControl> ) -> Self {
+        *Rc::get_mut( &mut self.border ).unwrap() = border;
         self
     }
 }

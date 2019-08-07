@@ -11,7 +11,6 @@ use egress_proxy::{
 use egress_proxy::middleware::proxy_filter::ProxyFilterCollection;
 use egress_proxy::border::host_control::HostControlBuilder;
 use egress_proxy::border::BorderControlBuilder;
-use std::sync::Arc;
 
 fn setup_logger() {
     std::env::set_var( "RUST_LOG", "egress_proxy=debug,actix_server=debug,actix_web=debug,main=debug,mio=info,tokio_reactor=info" );
@@ -39,9 +38,11 @@ fn main() -> std::io::Result<()> {
     info!( "App Config = {:?}", cfg );
 
 //    let border = Arc::new(HostControl::new(  forward_url ) );
-    let border = HostControlBuilder::new()
-            .with_default_destination( forward_url )
-            .build();
+//    let border = Arc::new(
+//        HostControlBuilder::new()
+//            .with_default_destination( forward_url )
+//            .build()
+//    );
 
     HttpServer::new( move || {
         App::new()
@@ -52,7 +53,13 @@ fn main() -> std::io::Result<()> {
             .default_service(
                 web::resource("")
                     .wrap(MeasureLatencyCollection::new() )
-                    .wrap( ProxyFilterCollection::from_control( border ) )
+                    .wrap(
+                        ProxyFilterCollection::new().with_border(
+                            HostControlBuilder::new()
+                                .with_default_destination( forward_url.clone() )
+                                .build()
+                        )
+                    )
                     .to_async( proxy::forward )
             )
             .service(

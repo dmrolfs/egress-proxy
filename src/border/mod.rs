@@ -6,7 +6,7 @@ use actix_http::error::ErrorForbidden;
 
 pub mod host_control;
 
-pub trait BorderControl : Clone {
+pub trait BorderControl {
     /// Requests challenged by BorderControl.
 //    type Request = HttpRequest;
 
