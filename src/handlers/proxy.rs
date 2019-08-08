@@ -38,11 +38,7 @@ pub fn forward(
         forwarded_req
     };
 
-    let method_sel = labels!{ "method" => req.method().as_str(), };
     let family = metrics_collection.get_ref().0.clone();
-
-    let allowed = family.allowed.with( &method_sel );
-    allowed.inc();
 
     if let Some(size_value) = req.headers().get( header::CONTENT_LENGTH ) {
         let size = size_value.to_str().unwrap().parse::<i64>().unwrap();

@@ -1,21 +1,61 @@
 use std::rc::Rc;
+use std::sync::{Arc, Mutex};
+use prometheus::IntCounterVec;
+use lazy_static::*;
 use actix_service::{Service, Transform};
 use actix_web::dev::{ServiceRequest, ServiceResponse};
 use actix_web::{http, Error, HttpResponse};
 use futures::{Poll, future::{ok, Either, FutureResult}};
 use crate::border::{BorderControl, host_control::HostControlBuilder, BorderControlBuilder};
-use std::sync::{Arc, Mutex};
 
 
-pub struct ProxyFilterCollection {
-    border: Rc<Box<dyn BorderControl>>,
+lazy_static! {
+    pub static ref ALLOWED_TOTAL: IntCounterVec = register_int_counter_vec!(
+        opts!(
+            "egress_http_request_allowed_total",
+            "Total number of egress HTTP requests allowed.",
+            labels! {
+                "realm" => "ex-realm",
+                "pipeline_id" => "ex-pipeline-id",
+            }
+        ),
+        &["method"]
+    )
+    .unwrap();
+
+    pub static ref BLOCKED_TOTAL: IntCounterVec = register_int_counter_vec!(
+        opts!(
+            "egress_http_request_blocked_total",
+            "Total number of egress HTTP requests blocked.",
+            labels! {
+                "realm" => "ex-realm",
+                "pipeline_id" => "ex-pipeline-id",
+            }
+        ),
+        &["method"]
+    )
+    .unwrap();
+}
+
+pub struct ProxyFilterCollection( Rc<Family> );
+
+struct Family {
+    border: Box<dyn BorderControl>,
+    allowed: &'static IntCounterVec,
+    blocked: &'static IntCounterVec,
 }
 
 impl Default for ProxyFilterCollection {
     fn default() -> Self {
-        ProxyFilterCollection {
-            border: Rc::new( HostControlBuilder::new().build() ),
-        }
+        ProxyFilterCollection(
+            Rc::new(
+                Family {
+                    border: HostControlBuilder::new().build(),
+                    allowed: &ALLOWED_TOTAL,
+                    blocked: &BLOCKED_TOTAL,
+                }
+            )
+        )
     }
 }
 
@@ -25,7 +65,8 @@ impl ProxyFilterCollection {
     }
 
     pub fn with_border( mut self, border: Box<dyn BorderControl> ) -> Self {
-        *Rc::get_mut( &mut self.border ).unwrap() = border;
+        let family = Rc::get_mut( &mut self.0 ).unwrap();
+        family.border = border;
         self
     }
 }
@@ -45,12 +86,12 @@ where
     type Future = FutureResult<Self::Transform, Self::InitError>;
 
     fn new_transform( &self, service: S ) -> Self::Future {
-        ok( ProxyFilterMiddleware { service, border: self.border.clone(), } )
+        ok( ProxyFilterMiddleware { service, family: self.0.clone(), } )
     }
 }
 
 pub struct ProxyFilterMiddleware<S> {
-    border: Rc<Box<dyn BorderControl>>,
+    family: Rc<Family>,
     service: S,
 }
 
@@ -67,9 +108,17 @@ where
     fn poll_ready( &mut self ) -> Poll<(), Self::Error> { self.service.poll_ready() }
 
     fn call( &mut self, req: ServiceRequest ) -> Self::Future {
-        if let Ok(destination) = self.border.request_visa( &req ) {
+        let method_sel = labels!{ "method" => req.method().as_str(), };
+
+        if let Ok(destination) = self.family.border.request_visa( &req ) {
+            let allowed = self.family.allowed.with( &method_sel );
+            allowed.inc();
+
             Either::A( self.service.call(req) )
         } else {
+            let blocked = self.family.blocked.with( &method_sel );
+            blocked.inc();
+
             Either::B(
                 ok(
                     req.into_response(
